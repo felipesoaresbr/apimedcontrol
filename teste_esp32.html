@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simulador ESP32 (Medic Center)</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body style="font-family: sans-serif; background: #222; color: #eee;">
+    <h1>Simulador ESP32 (Fingindo ser Usuário 1)</h1>
+    <p id="status" style="color: red;">Status: Desconectado</p>
+    
+    <h2>Logs de Alarme (Hardware):</h2>
+    <ul id="mensagens"></ul>
+
+    <script>
+        // Finge ser o dispositivo do usuário 1
+        const userId = 1; 
+
+        // 2. Conecta no seu servidor back-end
+        const socket = io("http://localhost:8081");
+
+        // 3. Quando conectar...
+        socket.on("connect", () => {
+            console.log("Conectado ao servidor!", socket.id);
+            document.getElementById("status").innerHTML = "Status: Conectado!";
+            document.getElementById("status").style.color = "lightgreen";
+            
+            // 4. ...registra o dispositivo (o "handshake")
+            console.log(`Registrando como usuário ${userId}...`);
+            socket.emit("register_device", { userId: userId });
+        });
+
+        // 5. O MAIS IMPORTANTE: Ouve pelo alarme
+        // O 'data' agora é a STRING que o seu hardware espera
+        socket.on("disparar_alarme", (data) => {
+            
+            console.log("!!! ALARME RECEBIDO (STRING) !!!");
+            console.log(data); // Ex: "Amoxilina (Teste),13:32,3,Comprimido,1"
+            
+            // Mostra o alarme na tela
+            const item = document.createElement("li");
+            item.innerHTML = `<strong>(${new Date().toLocaleTimeString()}) Alarme:</strong> ${data}`;
+            document.getElementById("mensagens").appendChild(item);
+            
+            // Simula o BUZZER!
+            alert("BEEP BEEP! Alarme Recebido:\n" + data);
+        });
+
+        // 6. Se a conexão cair
+        socket.on("disconnect", () => {
+            console.log("Desconectado do servidor.");
+            document.getElementById("status").innerHTML = "Status: Desconectado";
+            document.getElementById("status").style.color = "red";
+        });
+    </script>
+</body>
+</html>
